@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Austin Industrial HVAC - Admin Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f4f6f8;
+      color: #333;
+    }
+    header {
+      background: #004080;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    header img {
+      height: 50px;
+    }
+    main {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    #login-section, #dashboard {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    #dashboard {
+      display: none;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    input[type="password"] {
+      padding: 0.5rem;
+      font-size: 1rem;
+      width: 200px;
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background: #004080;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    canvas {
+      max-width: 100%;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://www.austin-ind.com/wp-content/themes/austin-industrial-theme/assets/images/austin-industrial-logo-white.svg" alt="Austin Industrial Logo" />
+    <h1>Austin Industrial HVAC Admin Dashboard</h1>
+  </header>
+  <main>
+    <section id="login-section">
+      <label for="adminCode">Enter Admin Code:</label>
+      <input type="password" id="adminCode" autocomplete="off" />
+      <button onclick="checkAdminCode()">Enter</button>
+      <p id="loginMessage" style="color: red;"></p>
+    </section>
+
+    <section id="dashboard">
+      <h2>Pre-Maintenance Check Data Overview</h2>
+      <canvas id="barChart"></canvas>
+      <canvas id="pieChart"></canvas>
+      <!-- Add more charts as needed -->
+    </section>
+  </main>
+
+  <script>
+    const ADMIN_CODE = "1695";
+
+    function checkAdminCode() {
+      const inputCode = document.getElementById("adminCode").value.trim();
+      const message = document.getElementById("loginMessage");
+      if (inputCode === ADMIN_CODE) {
+        document.getElementById("login-section").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        loadChartData();
+      } else {
+        message.textContent = "Incorrect admin code.";
+      }
+    }
+
+    async function loadChartData() {
+      // Example: Load data from Google Sheets CSV export
+      // Replace SHEET_ID and RANGE with your actual sheet details
+      const sheetId = "1Z4Q_vDLAaG4UkKbNmWzbPbhkiOgICzDMQ3MgeX1kuEE";
+      // We'll use the first sheet's CSV export link
+      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
+
+      try {
+        const response = await fetch(url);
+        const csvText = await response.text();
+        const data = parseCSV(csvText);
+
+        // Example: Create a bar chart with sample data from the sheet
+        createBarChart(data);
+        createPieChart(data);
+      } catch (error) {
+        alert("Failed to load data: " + error);
+      }
+    }
+
+    function parseCSV(text) {
+      // Simple CSV parser, converts CSV text into an array of objects
+      const lines = text.trim().split("\n");
+      const headers = lines[0].split(",");
+      const rows = lines.slice(1);
+      return rows.map(row => {
+        const values = row.split(",");
+        let obj = {};
+        headers.forEach((header, i) => {
+          obj[header.trim()] = values[i].trim();
+        });
+        return obj;
+      });
+    }
+
+    function createBarChart(data) {
+      // Example: Chart the count of one field - adjust based on your data
+
+      // Count occurrences of values in a chosen column (e.g., "Machine ID" or any column in your sheet)
+      const counts = {};
+      data.forEach(row => {
+        const key = row["Machine ID"] || "Unknown";
+        counts[key] = (counts[key] || 0) + 1;
+      });
+
+      const labels = Object.keys(counts);
+      const values = Object.values(counts);
+
+      const ctx = document.getElementById("barChart").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Number of Pre-Maintenance Checks per Machine",
+            data: values,
+            backgroundColor: "#004080"
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              precision:0
+            }
+          }
+        }
+      });
+    }
+
+    function createPieChart(data) {
+      // Example: Pie chart for status or condition if available
+
+      // Count occurrences of a status column (replace "Status" with your actual column name)
+      const counts = {};
+      data.forEach(row => {
+        const key = row["Status"] || "Unknown";
+        counts[key] = (counts[key] || 0) + 1;
+      });
+
+      const labels = Object.keys(counts);
+      const values = Object.values(counts);
+
+      const ctx = document.getElementById("pieChart").getContext("2d");
+      new Chart(ctx, {
+        type: "pie",
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: [
+              "#004080",
+              "#0073e6",
+              "#66a3ff",
+              "#cce0ff",
+              "#99ccff"
+            ]
+          }]
+        },
+        options: {
+          responsive: true
+        }
+      });
+    }
+  </script>
+</body>
+</html>
+
